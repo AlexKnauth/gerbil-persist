@@ -5,7 +5,7 @@
   :gerbil/gambit/bytes :gerbil/gambit/ports :gerbil/gambit/threads
   :std/format :std/misc/completion :std/misc/hash :std/sugar
   :clan/base :clan/concurrency :clan/string
-  :clan/poo/poo :clan/poo/mop :clan/poo/io :clan/poo/type
+  :clan/poo/poo :clan/poo/mop :clan/poo/io :clan/poo/type :clan/poo/debug
   ./db ./db-queue)
 
 (.defgeneric (walk-dependencies type f x) ;; Unit <- 'a:Type (Unit <- 'b:Type 'b) 'a
@@ -253,9 +253,19 @@
   ;; : (Fun 'a <- Key (Fun 'a <- State (Fun Unit <- State)) TX)
   action:
   (lambda (key f)
+    (DDT action:
+      Any key
+      Any f)
     (def c (make-completion))
+    (DDT action-1:
+      Any c)
     (def (k . res) (completion-post! c (list->values res)))
+    (DDT action-2:
+      Any k
+      Any #f)
     (thread-send (<-key key) [Transform: f k])
+    (DDT action-3:
+      Any #t)
     (completion-wait! c))
 
   ;; Asynchronously notify (1) the actor with the given key that (2) work with the current tx is done;
