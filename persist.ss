@@ -259,7 +259,9 @@
     (def c (make-completion))
     (DDT action-1:
       Any c)
-    (def (k . res) (completion-post! c (list->values res)))
+    (def (k . res)
+      (DDT action-1.5: Any res)
+      (completion-post! c (list->values res)))
     (DDT action-2:
       Any k
       Any #f)
