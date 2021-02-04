@@ -181,7 +181,7 @@
           (push! transaction (DbConnection-blocked-transactions c))
           (hash-put! (DbConnection-open-transactions c) txid transaction))
         (values transaction (and blocked? (DbConnection-batch-completion c))))))
-  (displayln open-transaction_3:)
+  (displayln open-transaction_3: transaction " " completion)
   (wait-completion completion) ;; wait without holding the lock
   (displayln open-transaction_4:)
   transaction)
