@@ -62,6 +62,7 @@
   constructor: :init!)
 (defmethod {:init! DbConnection}
   (lambda (self name leveldb)
+    (displayln DbConnection_init!: name)
     (def mx (make-mutex name)) ;; Mutex
     (def txcounter 0) ;; Nat
     (def hooks (make-hash-table)) ;; (Table (<-) <- Any)
@@ -167,17 +168,22 @@
 ;; should be released as soon as "the" transaction is complete, unless we're already both
 ;; ready && triggered for the next batch commit. Have an option for that?
 (def (open-transaction (c (current-db-connection)))
+  (displayln open-transaction: c)
   (defvalues (transaction completion)
     (with-db-lock (c)
+      (displayln open-transaction_1: c)
       (let* ((txid (post-increment! (DbConnection-txcounter c)))
              (blocked? (and (DbConnection-ready? c) (DbConnection-triggered? c)))
              (status (if blocked? 'blocked 'open))
              (transaction (DbTransaction c txid status)))
+        (displayln open-transaction_2: " " txid " " blocked? " " status " " transaction)
         (if blocked?
           (push! transaction (DbConnection-blocked-transactions c))
           (hash-put! (DbConnection-open-transactions c) txid transaction))
         (values transaction (and blocked? (DbConnection-batch-completion c))))))
+  (displayln open-transaction_3:)
   (wait-completion completion) ;; wait without holding the lock
+  (displayln open-transaction_4:)
   transaction)
 
 ;; For now, let's
@@ -187,13 +193,18 @@
 ;;   If you need to synchronize on the transaction, be sure to return it or otherwise memorize it,
 ;;   or use after-commit from within the body.
 (def (call-with-tx fun (c #f) wait: (wait #f))
+  (displayln call-with-tx: fun c)
   (awhen (t (current-db-transaction))
     (error "Cannot nest transactions" t))
+  (displayln call-with-tx_1:)
   (def tx (open-transaction (or c (current-db-connection))))
+  (displayln call-with-tx_2: tx)
   (try
    (parameterize ((current-db-transaction tx))
+     (displayln call-with-tx_3: tx)
      (fun tx))
    (finally
+    (displayln call-with-tx_4: tx)
     (close-transaction tx)
     (when wait (sync-transaction tx)))))
 (defrule (with-tx (tx dbc ...) body ...)

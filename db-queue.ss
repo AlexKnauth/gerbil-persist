@@ -10,7 +10,7 @@
   :std/db/leveldb
   :std/misc/completion :std/misc/deque :std/misc/list :std/misc/number :std/sugar
   :clan/base :clan/concurrency
-  :clan/poo/poo :clan/poo/mop :clan/poo/io :clan/poo/number :clan/poo/type
+  :clan/poo/poo :clan/poo/mop :clan/poo/io :clan/poo/number :clan/poo/type :clan/poo/debug
   ./db)
 
 (def PairNatNat (Pair Nat Nat)) ;; used to represent start and length of queue
@@ -48,6 +48,7 @@
 ;; Assumes that tx is open
 ;; : <- DbQueue Bytes TX
 (def (DbQueue-send! q msg tx)
+  (DDT DbQueue-send!: Any q Any msg Any tx)
   (with-lock (DbQueue-mx q)
     (lambda ()
       (when (%DbQueue-empty? q) (%DbQueue-wakeup q #t))
@@ -68,6 +69,7 @@
 ;; Assumes that tx is open
 ;; : (OrFalse Bytes) <- DbQueue TX
 (def (DbQueue-receive! q tx)
+  (DDT DbQueue-receive!: Any q Any tx)
   (with-lock (DbQueue-mx q)
     (lambda ()
       (and (not (%DbQueue-empty? q)) (%DbQueue-receive! q tx)))))
@@ -87,6 +89,7 @@
 ;; Restore a DbQueue from its persisted state, or start a new one if none is present.
 ;; : DbQueue <- Any Bytes (<- Bytes TX)
 (def (DbQueue-restore name db-key processor)
+  (DDT DbQueue-restore: Any name Any db-key Any processor)
   (def q (match (with-tx (tx) (DbQueue-state db-key tx))
            ([start . length] (make-DbQueue (make-mutex name) db-key start length #f))))
   (def manager
@@ -131,6 +134,7 @@
 ;; Assumes we hold the lock on the q, that the q is not empty, and that tx is open
 ;; : Bytes <- DbCommittedQueue TX
 (def (DbCommittedQueue-receive! q tx)
+  (DDT DbCommittedQueue-receive!: Any q Any tx)
   (with-lock (DbQueue-mx q)
     (lambda ()
       (and (not (%DbCommittedQueue-empty? q)) (%DbQueue-receive! q tx)))))
@@ -144,6 +148,7 @@
 ;; Restore a DbQueue from its persisted state, or start a new one if none is present.
 ;; : DbCommittedQueue <- Any Bytes (<- Nat Bytes TX)
 (def (DbCommittedQueue-restore name db-key processor)
+  (DDT DbQueue-restore: Any name Any db-key Any processor)
   (def q (match (with-tx (tx) (DbQueue-state db-key tx))
            ([start . length]
             (make-DbCommittedQueue
